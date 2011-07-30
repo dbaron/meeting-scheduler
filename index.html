@@ -428,15 +428,19 @@ body[data-state="pickweekly"] > #pickweekly { display: block }
 body[data-state="picksingle"] > #picksingle { display: block }
 body[data-state="weekly"] > #weekly { display: block }
 body[data-state="single"] > #single { display: block }
+#picktype { text-align: center }
 </style>
 </head>
 <body>
 
 <div id="picktype">
-  <input type="button" value="Schedule a one-time meeting"
-         onclick="sethash({state: 'picksingle'})">
-  <input type="button" value="Schedule a weekly meeting"
-         onclick="sethash({state: 'pickweekly'})">
+  <p>
+    <input type="button" value="Schedule a one-time meeting"
+           onclick="sethash({state: 'picksingle'})">
+    <input type="button" value="Schedule a weekly meeting"
+           onclick="sethash({state: 'pickweekly'})">
+  </p>
+  <p>See the <a href="https://github.com/dbaron/meeting-scheduler">source code</a>.</p>
 </div>
 
 <div id="pickweekly">
