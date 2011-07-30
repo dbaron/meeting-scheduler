@@ -66,6 +66,8 @@ function main(event) {
 
     var singleContainer = document.getElementById("single");
     make_empty(singleContainer);
+    var weeklyContainer = document.getElementById("weekly");
+    make_empty(weeklyContainer);
 
     switch (state.state) {
         case "single":
@@ -76,29 +78,7 @@ function main(event) {
 
             var d = new Date(state.date * 1000);
 
-            // Compile array of unique offset/abbr pairs, in order of
-            // their first occurrence in the zones list, with *all* the
-            // names for each pair, again in order of the zones list.
-            var results = [];
-            for (var zone_idx = 0; zone_idx < zones.length; ++zone_idx) {
-                var zone = zones[zone_idx];
-
-                var zi = tz.zoneAt(zone.zone, d);
-
-                for (var result_idx = 0; result_idx < results.length;
-                     ++result_idx) {
-                    var result = results[result_idx];
-
-                    if (result.offset == zi.offset && result.abbr == zi.abbr) {
-                        result.names.push(zone.name);
-                        break;
-                    }
-                }
-                if (result_idx == results.length) {
-                    zi.names = [ zone.name ];
-                    results.push(zi);
-                }
-            }
+            var results = times_list_for(d, zones);
 
             // And output the data into a table.
             var table = document.createElement("table");
@@ -124,6 +104,108 @@ function main(event) {
 
             singleContainer.appendChild(table);
             break;
+        case "weekly":
+            var zones = state.zones;
+            if (zones == "default") {
+                zones = gConfig.initialZones;
+            }
+
+            var day = state.day;
+            var hour = state.hour;
+            var minute = state.minute;
+
+            // Assume that somebody might care about a slightly earlier
+            // time, but not too much earlier.  How about 8 hours ago?
+            var d = new Date(Date.now() - 3600000 * 8);
+            d = weekly_after(d, zones[0].zone, day, hour, minute);
+
+            var cur_results = times_list_for(d, zones);
+            var cur_string = JSON.stringify(cur_results);
+
+            var cur_first =
+                find_first_equal(d, d, zones, day, hour, minute, cur_string);
+            var cur_last =
+                find_last_equal(d, d, zones, day, hour, minute, cur_string);
+
+            if (cur_last) {
+                var next_first =
+                    weekly_after(cur_last, zones[0].zone, day, hour, minute);
+                var next_results = times_list_for(next_first, zones);
+                var next_last = find_last_equal(next_first, d, zones,
+                                                day, hour, minute,
+                                                JSON.stringify(next_results));
+            }
+
+            function weekly_results_table(results) {
+                // And output the data into a table.
+                var table = document.createElement("table");
+                table.setAttribute("border", "1");
+                var tbody = document.createElement("tbody");
+                table.appendChild(tbody);
+                for (var result_idx = 0; result_idx < results.length;
+                     ++result_idx) {
+                    var result = results[result_idx];
+                    var tr = document.createElement("tr");
+
+                    function add_cell(text) {
+                        var td = document.createElement("td");
+                        td.appendChild(document.createTextNode(text));
+                        tr.appendChild(td);
+                    }
+
+                    add_cell(result.names.join(", "));
+                    add_cell(format_date_in_week(d, result.offset, result.abbr));
+
+                    tbody.appendChild(tr);
+                }
+                return table;
+            }
+
+            function rangetext(results, startdate, enddate) {
+                function min_offset(results) {
+                    var offset = results[0].offset;
+                    for (var i = 1; i < results.length; ++i) {
+                        offset = Math.min(results[i].offset, offset);
+                    }
+                    return offset;
+                }
+                function max_offset(results) {
+                    var offset = results[0].offset;
+                    for (var i = 1; i < results.length; ++i) {
+                        offset = Math.max(results[i].offset, offset);
+                    }
+                    return offset;
+                }
+
+                var result = "";
+                if (startdate) {
+                    var fake_d_start = new Date(startdate.valueOf() +
+                                                min_offset(results) * 1000)
+                    result += "From " + format_date_part(fake_d_start);
+                }
+                if (enddate) {
+                    var fake_d_end = new Date(enddate.valueOf() +
+                                              max_offset(results) * 1000)
+                    if (result != "") {
+                        result += " to ";
+                    } else {
+                        result += "To ";
+                    }
+                    result += format_date_part(fake_d_end);
+                }
+                if (result != "") {
+                    result += ":";
+                }
+                return document.createTextNode(result);
+            }
+
+            weeklyContainer.appendChild(rangetext(cur_results, cur_first, cur_last));
+            weeklyContainer.appendChild(weekly_results_table(cur_results));
+            if (cur_last) {
+                weeklyContainer.appendChild(rangetext(next_results, next_first, next_last));
+                weeklyContainer.appendChild(weekly_results_table(next_results));
+            }
+
         default:
             break;
     }
@@ -148,15 +230,142 @@ function pad2(n) {
     return (n < 10 ? "0" : "") + n;
 }
 
+function format_weekday_part(fake_d) {
+    return ([ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ])[fake_d.getUTCDay()];
+}
+
+function format_date_part(fake_d) {
+    return fake_d.getUTCFullYear() + "-" +
+           pad2(fake_d.getUTCMonth() + 1) + "-" +
+           pad2(fake_d.getUTCDate());
+}
+
+function format_time_part(fake_d) {
+    return pad2(fake_d.getUTCHours()) + ":" +
+           pad2(fake_d.getUTCMinutes());
+}
+
 function format_date(date, offset, abbr) {
     var fake_d = new Date(date.valueOf() + offset * 1000);
-    var wday = ([ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ])[fake_d.getUTCDay()];
-    return wday + ", " + fake_d.getUTCFullYear() + "-" +
-           pad2(fake_d.getUTCMonth() + 1) + "-" +
-           pad2(fake_d.getUTCDate()) + ", " +
-           pad2(fake_d.getUTCHours()) + ":" +
-           pad2(fake_d.getUTCMinutes()) + " " +
+    return format_weekday_part(fake_d) + ", " +
+           format_date_part(fake_d) + ", " +
+           format_time_part(fake_d) + " " +
            abbr;
+}
+
+function format_date_in_week(date, offset, abbr) {
+    var fake_d = new Date(date.valueOf() + offset * 1000);
+    return format_weekday_part(fake_d) + ", " +
+           format_time_part(fake_d) + " " +
+           abbr;
+}
+
+function times_list_for(d, zones) {
+    // Compile array of unique offset/abbr pairs, in order of
+    // their first occurrence in the zones list, with *all* the
+    // names for each pair, again in order of the zones list.
+    var results = [];
+    for (var zone_idx = 0; zone_idx < zones.length; ++zone_idx) {
+        var zone = zones[zone_idx];
+
+        var zi = tz.zoneAt(zone.zone, d);
+
+        for (var result_idx = 0; result_idx < results.length;
+             ++result_idx) {
+            var result = results[result_idx];
+
+            if (result.offset == zi.offset && result.abbr == zi.abbr) {
+                result.names.push(zone.name);
+                break;
+            }
+        }
+        if (result_idx == results.length) {
+            zi.names = [ zone.name ];
+            results.push(zi);
+        }
+    }
+    return results;
+}
+
+function weekly_after(d, zone, day, hour, minute) {
+    var zi = tz.zoneAt(zone, d);
+
+    var fake_d = new Date(d.valueOf() + zi.offset * 1000);
+    var advance = (day - fake_d.getUTCDay() + 7) % 7;
+    var fake_d = new Date(fake_d.valueOf() + 86400000 * advance);
+    for (;;) {
+        var zs = tz.datesFor(zone, fake_d.getUTCFullYear(),
+                             fake_d.getUTCMonth() + 1,
+                             fake_d.getUTCDate(), hour, minute, 0);
+        // Assume tz.datesFor returns results in order of time!
+        for (var i = 0; i < zs.length; ++i) {
+            var zi = zs[i];
+            if (zi.date.valueOf() > d.valueOf()) {
+                return zi.date;
+            }
+        }
+        // Doesn't occur, either because we hit a time of the day at or
+        // before our starting point or because the time change crossed
+        // this week's time entirely.  Try next week.
+        fake_d = new Date(fake_d.valueOf() + 86400000 * 7);
+    }
+}
+
+function weekly_before(d, zone, day, hour, minute) {
+    var zi = tz.zoneAt(zone, d);
+
+    var fake_d = new Date(d.valueOf() + zi.offset * 1000);
+    var advance = (fake_d.getUTCDay() - day + 7) % 7;
+    var fake_d = new Date(fake_d.valueOf() - 86400000 * advance);
+    for (;;) {
+        var zs = tz.datesFor(zone, fake_d.getUTCFullYear(),
+                             fake_d.getUTCMonth() + 1,
+                             fake_d.getUTCDate(), hour, minute, 0);
+        // Assume tz.datesFor returns results in order of time!
+        for (var i = zs.length - 1; i >= 0; --i) {
+            var zi = zs[i];
+            if (zi.date.valueOf() < d.valueOf()) {
+                return zi.date;
+            }
+        }
+        // Doesn't occur, either because we hit a time of the day at or
+        // before our starting point or because the time change crossed
+        // this week's time entirely.  Try last week.
+        fake_d = new Date(fake_d.valueOf() - 86400000 * 7);
+    }
+}
+
+// Find the earliest weekly meeting that produces the same results given
+// in cur_string, starting from d, but not going before the beginning of
+// the year before the start of limit_d (in which case it returns null).
+function find_first_equal(d, limit_d, zones, day, hour, minute, cur_string) {
+    var result = d;
+    for (;;) {
+        var before = weekly_before(result, zones[0].zone, day, hour, minute);
+        // FIXME: iffy year check!
+        if (before.getUTCFullYear() + 1 < limit_d.getUTCFullYear()) {
+            return null;
+        }
+        if (JSON.stringify(times_list_for(before, zones)) != cur_string) {
+            return result;
+        }
+        result = before;
+    }
+}
+
+function find_last_equal(d, limit_d, zones, day, hour, minute, cur_string) {
+    var result = d;
+    for (;;) {
+        var after = weekly_after(result, zones[0].zone, day, hour, minute);
+        // FIXME: iffy year check!
+        if (after.getUTCFullYear() - 1 > limit_d.getUTCFullYear()) {
+            return null;
+        }
+        if (JSON.stringify(times_list_for(after, zones)) != cur_string) {
+            return result;
+        }
+        result = after;
+    }
 }
 
 function run_single(input) {
