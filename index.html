@@ -43,6 +43,7 @@ window.addEventListener("load", load, false);
 function load(event) {
     var t = gConfig.initialZones[0].name + " time";
     document.getElementById("describezonesingle").appendChild(document.createTextNode(t));
+    document.getElementById("describezoneweekly").appendChild(document.createTextNode(t));
 }
 
 /**
@@ -183,6 +184,33 @@ function run_single(input) {
     }
 }
 
+function run_weekly(input) {
+    var pickday = document.getElementById("weeklyday");
+    var picktime = document.getElementById("weeklytime");
+
+    if (pickday.selectedIndex < 0 || picktime.value == "") {
+        // Wait for the other control to be filled in.
+        return;
+    }
+
+    var day = pickday.selectedIndex;
+    var time = picktime.value;
+
+    picktime.value = "";
+
+    // Parse and validate the time after clearing the time but before
+    // clearing the day.
+    var m = time.match(/^(\d+):(\d+)$/);
+    if (!m) {
+        return;
+    }
+
+    pickday.selectedIndex = -1;
+
+    sethash({state: "weekly", zones: "default",
+             day: day, hour: Number(m[1]), minute: Number(m[2])});
+}
+
 </script>
 <style>
 body > div { display: none }
@@ -204,6 +232,22 @@ body[data-state="single"] > #single { display: block }
 
 <div id="pickweekly">
   <h1>Schedule a weekly meeting</h1>
+  <p>
+    <select size="7" id="weeklyday" onchange="run_weekly()">
+      <option value="0">Sunday</option>
+      <option value="1">Monday</option>
+      <option value="2">Tuesday</option>
+      <option value="3">Wednesday</option>
+      <option value="4">Thursday</option>
+      <option value="5">Friday</option>
+      <option value="6">Saturdday</option>
+    </select>
+    <input id="weeklytime"
+           type="text" placeholder="HH:MM (24-hour time)" size="21"
+           onblur="run_weekly()"
+           onkeyup="if (event.keyCode == event.DOM_VK_RETURN) this.blur()">
+    <span id="describezoneweekly"></span>
+  </p>
 </div>
 
 <div id="picksingle">
