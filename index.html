@@ -73,6 +73,8 @@ function main(event) {
                 zones = gConfig.initialZones;
             }
 
+            var d = new Date(state.date * 1000);
+
             // Compile array of unique offset/abbr pairs, in order of
             // their first occurrence in the zones list, with *all* the
             // names for each pair, again in order of the zones list.
@@ -80,7 +82,7 @@ function main(event) {
             for (var zone_idx = 0; zone_idx < zones.length; ++zone_idx) {
                 var zone = zones[zone_idx];
 
-                var zi = tz.zoneAt(zone.zone, new Date(state.date * 1000));
+                var zi = tz.zoneAt(zone.zone, d);
 
                 for (var result_idx = 0; result_idx < results.length;
                      ++result_idx) {
@@ -114,7 +116,7 @@ function main(event) {
                 }
 
                 add_cell(result.names.join(", "));
-                add_cell(result.offset + " " + result.abbr);
+                add_cell(format_date(d, result.offset, result.abbr));
 
                 tbody.appendChild(tr);
             }
@@ -139,6 +141,21 @@ function sethash(json) {
 function make_empty(container) {
     while (container.lastChild)
         container.removeChild(container.lastChild);
+}
+
+function pad2(n) {
+    return (n < 10 ? "0" : "") + n;
+}
+
+function format_date(date, offset, abbr) {
+    var fake_d = new Date(date.valueOf() + offset * 1000);
+    var wday = ([ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ])[fake_d.getUTCDay()];
+    return wday + ", " + fake_d.getUTCFullYear() + "-" +
+           pad2(fake_d.getUTCMonth() + 1) + "-" +
+           pad2(fake_d.getUTCDate()) + ", " +
+           pad2(fake_d.getUTCHours()) + ":" +
+           pad2(fake_d.getUTCMinutes()) + " " +
+           abbr;
 }
 
 function run_single(input) {
