@@ -1,0 +1,19 @@
+# meeting-scheduler - Web application for figuring out what time a meeting
+#   is in multiple timezones.
+
+# Written in 2011 by L. David Baron <dbaron@dbaron.org>
+
+# To the extent possible under law, the author(s) have dedicated all
+# copyright and related and neighboring rights to this software to the
+# public domain worldwide.  This software is distributed without any
+# warranty.
+#
+# You should have received a copy of the CC0 Public Domain Dedication
+# along with this software.  If not, see
+# <http://creativecommons.org/publicdomain/zero/1.0/>.
+
+This is meeting-scheduler, a Web application for figuring out what time
+a meeting is in multiple timezones.
+
+I'm initially developing it to be useful to the Mozilla community, but
+with an eye towards letting it become more customizable in the future.

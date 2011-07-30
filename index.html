@@ -1,0 +1,104 @@
+<!DOCTYPE HTML>
+<!--
+ meeting-scheduler - Web application for figuring out what time a meeting
+   is in multiple timezones.
+
+ Written in 2011 by L. David Baron <dbaron@dbaron.org>
+
+ To the extent possible under law, the author(s) have dedicated all
+ copyright and related and neighboring rights to this software to the
+ public domain worldwide.  This software is distributed without any
+ warranty.
+
+ You should have received a copy of the CC0 Public Domain Dedication
+ along with this software.  If not, see
+ <http://creativecommons.org/publicdomain/zero/1.0/>.
+-->
+<html>
+<head>
+<title>Meeting Scheduler</title>
+<script>
+
+var gConfig = {
+  initialZones: {
+    "Mountain View": "America/Los_Angeles",
+    "Toronto": "America/Toronto",
+    "Paris": "Europe/Paris",
+    "Beijing": "Asia/Shanghai",
+    "Tokyo": "Asia/Tokyo",
+    "Auckland": "Pacific/Auckland",
+    "Vancouver": "America/Vancouver",
+    "London": "Europe/London",
+    "New York": "America/New_York",
+    "Sao Paulo": "America/Sao_Paulo",
+    "Tel Aviv": "Asia/Jerusalem",
+    "Bangkok": "Asia/Bangkok",
+    "Sydney": "Australia/Sydney",
+    "Melbourne": "Australia/Melbourne",
+  },
+}
+
+/**
+ * All of the primary states of the application are represented in the
+ * hash of the URL.  We transition states by setting the hash, receiving
+ * a hashchange event, and processing the new state.
+ */
+window.addEventListener("hashchange", main, false);
+window.addEventListener("load", main, false);
+function main(event) {
+    var state = gethash();
+    if (!("state" in state) ||
+        (state.state != "picksingle" &&
+         state.state != "pickweekly" &&
+         state.state != "single" &&
+         state.state != "weekly")) {
+        state.state = "unknown";
+    }
+    document.body.setAttribute("data-state", state.state);
+}
+
+function gethash() {
+    return (window.location.hash == "")
+             ? {}
+             : JSON.parse(unescape(window.location.hash.substring(1)));
+}
+
+function sethash(json) {
+    window.location.hash = escape(JSON.stringify(json));
+}
+
+</script>
+<style>
+body > div { display: none }
+body[data-state="unknown"] > #picktype { display: block }
+body[data-state="pickweekly"] > #pickweekly { display: block }
+body[data-state="picksingle"] > #picksingle { display: block }
+body[data-state="weekly"] > #weekly { display: block }
+body[data-state="single"] > #single { display: block }
+</style>
+</head>
+<body>
+
+<div id="picktype">
+  <input type="button" value="Schedule a one-time meeting"
+         onclick="sethash({state: 'picksingle'})">
+  <input type="button" value="Schedule a weekly meeting"
+         onclick="sethash({state: 'pickweekly'})">
+</div>
+
+<div id="pickweekly">
+  pick weekly!
+</div>
+
+<div id="picksingle">
+  pick single!
+</div>
+
+<div id="weekly">
+</div>
+
+<div id="single">
+</div>
+
+</body>
+</html>
