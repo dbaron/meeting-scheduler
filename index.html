@@ -62,6 +62,68 @@ function main(event) {
         state.state = "unknown";
     }
     document.body.setAttribute("data-state", state.state);
+
+    var singleContainer = document.getElementById("single");
+    make_empty(singleContainer);
+
+    switch (state.state) {
+        case "single":
+            var zones = state.zones;
+            if (zones == "default") {
+                zones = gConfig.initialZones;
+            }
+
+            // Compile array of unique offset/abbr pairs, in order of
+            // their first occurrence in the zones list, with *all* the
+            // names for each pair, again in order of the zones list.
+            var results = [];
+            for (var zone_idx = 0; zone_idx < zones.length; ++zone_idx) {
+                var zone = zones[zone_idx];
+
+                var zi = tz.zoneAt(zone.zone, new Date(state.date * 1000));
+
+                for (var result_idx = 0; result_idx < results.length;
+                     ++result_idx) {
+                    var result = results[result_idx];
+
+                    if (result.offset == zi.offset && result.abbr == zi.abbr) {
+                        result.names.push(zone.name);
+                        break;
+                    }
+                }
+                if (result_idx == results.length) {
+                    zi.names = [ zone.name ];
+                    results.push(zi);
+                }
+            }
+
+            // And output the data into a table.
+            var table = document.createElement("table");
+            table.setAttribute("border", "1");
+            var tbody = document.createElement("tbody");
+            table.appendChild(tbody);
+            for (var result_idx = 0; result_idx < results.length;
+                 ++result_idx) {
+                var result = results[result_idx];
+                var tr = document.createElement("tr");
+
+                function add_cell(text) {
+                    var td = document.createElement("td");
+                    td.appendChild(document.createTextNode(text));
+                    tr.appendChild(td);
+                }
+
+                add_cell(result.names.join(", "));
+                add_cell(result.offset + " " + result.abbr);
+
+                tbody.appendChild(tr);
+            }
+
+            singleContainer.appendChild(table);
+            break;
+        default:
+            break;
+    }
 }
 
 function gethash() {
@@ -72,6 +134,11 @@ function gethash() {
 
 function sethash(json) {
     window.location.hash = escape(JSON.stringify(json));
+}
+
+function make_empty(container) {
+    while (container.lastChild)
+        container.removeChild(container.lastChild);
 }
 
 function run_single(input) {
@@ -132,11 +199,9 @@ body[data-state="single"] > #single { display: block }
   </p>
 </div>
 
-<div id="weekly">
-</div>
+<div id="weekly"></div>
 
-<div id="single">
-</div>
+<div id="single"></div>
 
 </body>
 </html>
