@@ -17,3 +17,7 @@ a meeting is in multiple timezones.
 
 I'm initially developing it to be useful to the Mozilla community, but
 with an eye towards letting it become more customizable in the future.
+
+It requires that the compiled copy of tz.js (or, on an HTTP server,
+tz.js.gz) from https://github.com/dbaron/tz.js be placed in this
+directory along with the code.

@@ -17,25 +17,32 @@
 <html>
 <head>
 <title>Meeting Scheduler</title>
+<script src="tz.js"></script>
 <script>
 
 var gConfig = {
-  initialZones: {
-    "Mountain View": "America/Los_Angeles",
-    "Toronto": "America/Toronto",
-    "Paris": "Europe/Paris",
-    "Beijing": "Asia/Shanghai",
-    "Tokyo": "Asia/Tokyo",
-    "Auckland": "Pacific/Auckland",
-    "Vancouver": "America/Vancouver",
-    "London": "Europe/London",
-    "New York": "America/New_York",
-    "Sao Paulo": "America/Sao_Paulo",
-    "Tel Aviv": "Asia/Jerusalem",
-    "Bangkok": "Asia/Bangkok",
-    "Sydney": "Australia/Sydney",
-    "Melbourne": "Australia/Melbourne",
-  },
+  initialZones: [
+    { name: "Mountain View", zone: "America/Los_Angeles" }, /* primary */
+    { name: "Toronto", zone: "America/Toronto" },
+    { name: "Paris", zone: "Europe/Paris" },
+    { name: "Beijing", zone: "Asia/Shanghai" },
+    { name: "Tokyo", zone: "Asia/Tokyo" },
+    { name: "Auckland", zone: "Pacific/Auckland" },
+    { name: "Vancouver", zone: "America/Vancouver" },
+    { name: "London", zone: "Europe/London" },
+    { name: "New York", zone: "America/New_York" },
+    { name: "Sao Paulo", zone: "America/Sao_Paulo" },
+    { name: "Tel Aviv", zone: "Asia/Jerusalem" },
+    { name: "Bangkok", zone: "Asia/Bangkok" },
+    { name: "Sydney", zone: "Australia/Sydney" },
+    { name: "Melbourne", zone: "Australia/Melbourne" },
+  ],
+}
+
+window.addEventListener("load", load, false);
+function load(event) {
+    var t = gConfig.initialZones[0].name + " time";
+    document.getElementById("describezonesingle").appendChild(document.createTextNode(t));
 }
 
 /**
@@ -67,6 +74,31 @@ function sethash(json) {
     window.location.hash = escape(JSON.stringify(json));
 }
 
+function run_single(input) {
+    var date = input.value;
+    input.value = "";
+    var m = date.match(/^(\d+)-(\d+)-(\d+) (\d+):(\d+)$/);
+    if (m) {
+        try {
+            var dates = tz.datesFor(gConfig.initialZones[0].zone,
+                                    Number(m[1]), Number(m[2]),
+                                    Number(m[3]), Number(m[4]),
+                                    Number(m[5]), 0);
+        } catch(ex) {
+            // Date prior to 1970.
+            return;
+        }
+        if (dates.length == 0) {
+            // Local time in time change gap.
+            return;
+        }
+        // use first option in time change gap
+        var date = dates[0].date.valueOf() / 1000;
+
+        sethash({state: "single", zones: "default", date: date});
+    }
+}
+
 </script>
 <style>
 body > div { display: none }
@@ -87,11 +119,17 @@ body[data-state="single"] > #single { display: block }
 </div>
 
 <div id="pickweekly">
-  pick weekly!
+  <h1>Schedule a weekly meeting</h1>
 </div>
 
 <div id="picksingle">
-  pick single!
+  <h1>Schedule a single meeting</h1>
+  <p>
+    <input type="text" placeholder="YYYY-MM-DD HH:MM (24-hour time)" size="32"
+           onblur="run_single(this)"
+           onkeyup="if (event.keyCode == event.DOM_VK_RETURN) this.blur()">
+    <span id="describezonesingle"></span>
+  </p>
 </div>
 
 <div id="weekly">
