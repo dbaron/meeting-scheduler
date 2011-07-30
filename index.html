@@ -458,7 +458,7 @@ body[data-state="single"] > #single { display: block }
     <input id="weeklytime"
            type="text" placeholder="HH:MM (24-hour time)" size="21"
            onblur="run_weekly()"
-           onkeyup="if (event.keyCode == event.DOM_VK_RETURN) this.blur()">
+           onkeyup="if (event.keyCode == 13) this.blur()">
     <span id="describezoneweekly"></span>
   </p>
 </div>
@@ -468,7 +468,7 @@ body[data-state="single"] > #single { display: block }
   <p>
     <input type="text" placeholder="YYYY-MM-DD HH:MM (24-hour time)" size="32"
            onblur="run_single(this)"
-           onkeyup="if (event.keyCode == event.DOM_VK_RETURN) this.blur()">
+           onkeyup="if (event.keyCode == 13) this.blur()">
     <span id="describezonesingle"></span>
   </p>
 </div>
